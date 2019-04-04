@@ -1,0 +1,13 @@
+/* Stylesheet by Anna E. George, 2019 */
+
+.gratBackground {
+    fill: #D5E3FF;
+}
+.gratLines {
+    fill: none;
+    stroke: #999;
+    stroke-width: 1px;
+}
+.map {
+    border: medium solid #999;
+}
