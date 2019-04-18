@@ -1,92 +1,96 @@
 //First line of main.js...wrap everything in a self-executing anonymous function to move to local scope
 (function () {
 
-    //pseudo-global variables
-    var attrArray = ["Total", "European or other NZ", "Maori", "Pacific Peoples", "Asian", "Middle Eastern Latin American or African"]; //list of attributes
-    var expressed = attrArray[0]; //initial attribute
+      //pseudo-global variables
+      var attrArray = ["Total", "European or other NZ", "Maori", "Pacific Peoples", "Asian", "Middle Eastern Latin American or African"]; //list of attributes
+      var expressed = attrArray[0]; //initial attribute
 
-    //chart frame dimensions
-    var chartWidth = window.innerWidth * 0.425,
-        chartHeight = 460,
-        leftPadding = 45,
-        rightPadding = 2,
-        topBottomPadding = 0,
-        chartInnerWidth = chartWidth - leftPadding - rightPadding,
-        chartInnerHeight = chartHeight - topBottomPadding * 2,
-        translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
+      //chart frame dimensions
+      var chartWidth = window.innerWidth * 0.425,
+          chartHeight = 460,
+          leftPadding = 45,
+          rightPadding = 2,
+          topBottomPadding = 0,
+          chartInnerWidth = chartWidth - leftPadding - rightPadding,
+          chartInnerHeight = chartHeight - topBottomPadding * 2,
+          translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
 
-//    create a scale to size bars proportionally to frame and for axis
-    var yScale = d3.scaleLinear()
-        .range([463, 0])
-        .domain([0, 1611000]);
+      //create a scale to size bars proportionally to frame and for axis
+      var yScale = d3.scaleLinear()
+          .range([463, 0])
+          .domain([0, 1611000]);
 
-    //begin script when window loads
-    window.onload = setMap();
+      //begin script when window loads
+      window.onload = setMap();
 
-    //set up choropleth map
-    function setMap(){
-      //map frame dimensions
-      var width = window.innerWidth * 0.4,
-          height = 460;
+      //set up choropleth map
+      function setMap(){
+
+          //map frame dimensions
+          var width = window.innerWidth * 0.4,
+              height = 460;
 
 
-          //create new svg container for the map
-          map = d3.select("body")
-            .append("svg")
-            .attr("class", "map")
-            .attr("width", width)
-            .attr("height", height);
+              //create new svg container for the map
+              map = d3.select("body")
+                .append("svg")
+                .attr("class", "map")
+                .attr("width", width)
+                .attr("height", height);
 
-          //Add box for background
-          innerRect = map.append("rect")
-            .attr("width", width)
-            .attr("height", height)
-            .style("fill", "#D5E3FF"); //fill color
+              //Add box for background
+              innerRect = map.append("rect")
+                .attr("width", width)
+                .attr("height", height)
+                .style("fill", "#D5E3FF"); //fill color
 
-        //create Albers equal area conic projection centered on Newe Zealand
-        var projection = d3.geoAlbers()
-        .center([-4.84, 29.56])
-        .rotate([-180, 70.36, 0])
-        .parallels([32.73, 81.46])
-        .scale(1758.89)
-        .translate([width / 2, height / 2]);
+          //create Albers equal area conic projection centered on Newe Zealand
+          var projection = d3.geoAlbers()
+          .center([-4.84, 29.56])
+          .rotate([-180, 70.36, 0])
+          .parallels([32.73, 81.46])
+          .scale(1758.89)
+          .translate([width / 2, height / 2]);
 
-        // Sets variable for projection
-        var path = d3.geoPath()
-            .projection(projection);
+          // Sets variable for projection
+          var path = d3.geoPath()
+              .projection(projection);
 
-        //use Promise.all to parallelize asynchronous data loading
-        var promises = [];
-        promises.push(d3.csv("data/NZPop2013.csv")); //load attributes from csv
-        promises.push(d3.json("data/NZRegions.topojson")); //load background spatial data
-        Promise.all(promises).then(callback);
-        // Sets call back function for data
-        function callback(data, yScale){
-          	csvData = data[0]; // Population data
-          	newzealand = data[1]; // NZ districts
+          //use Promise.all to parallelize asynchronous data loading
+          var promises = [];
+          promises.push(d3.csv("data/NZPop2013.csv")); //load attributes from csv
+          promises.push(d3.json("data/NZRegions.topojson")); //load background spatial data
+          Promise.all(promises).then(callback);
+          // Sets call back function for data
+          function callback(data){
+            	csvData = data[0]; // Population data
+            	newzealand = data[1]; // NZ districts
 
-            //place graticule on the map
-            setGraticule(map, path);
+              //place graticule on the map
+              setGraticule(map, path);
 
-            //translate new zealand TopoJSON
-            var newZealandDistricts = topojson.feature(newzealand, newzealand.objects.Pop_NZ2013).features;
-            //join csv data to GeoJSON enumeration units
-            newZealandDistricts = joinData(newZealandDistricts, csvData);
+              //translate new zealand TopoJSON
+              var newZealandDistricts = topojson.feature(newzealand, newzealand.objects.Pop_NZ2013).features;
+              //join csv data to GeoJSON enumeration units
+              newZealandDistricts = joinData(newZealandDistricts, csvData);
 
-            //create the color scale
-            var colorScale = makeColorScale(csvData);
+              //create the color scale
+              var colorScale = makeColorScale(csvData);
 
-            //add enumeration units to the map
-            setEnumerationUnits(newZealandDistricts, map, path, colorScale);
+              //add enumeration units to the map
+              setEnumerationUnits(newZealandDistricts, map, path, colorScale);
 
-            //add coordinated visualization to the map
-            setChart(csvData, colorScale, yScale);
+              //add coordinated visualization to the map
+              setChart(csvData, colorScale, yScale);
 
-            //add dropdown menu
-            createDropdown()
+              //add dropdown menu
+              createDropdown()
 
-        };
-      }; //end of setMap()
+              //set y-scale
+              //updateYAxis(data, expressed)
+
+          };
+    }; //end of setMap()
 
     function setGraticule(map, path){
       //create graticule generator
@@ -108,6 +112,7 @@
           .attr("d", path); //project graticule lines
     };
 
+    // Function that joins csv and geographical data
     function joinData(newZealandDistricts, csvData){
 
       //loop through csv to assign each set of csv attribute values to geojson region
@@ -132,7 +137,7 @@
               };
           };
       };
-        return newZealandDistricts;
+      return newZealandDistricts;
     };
 
     //function to create color scale generator
@@ -140,11 +145,11 @@
 
         // Sets color classes
         var colorClasses = [
-            "#D4B9DA",
-            "#C994C7",
-            "#DF65B0",
-            "#DD1C77",
-            "#980043"
+          "#fee5d9",
+          "#fcae91",
+          "#fb6a4a",
+          "#de2d26",
+          "#a50f15"
         ];
 
         //create color scale generator
@@ -185,12 +190,12 @@
           })
           .attr("d", path)
           .style("fill", function(d){
-              return choropleth(d.properties, colorScale);
+              return choropleth(d.properties, colorScale); // choropleth map
           })
-          .on("mouseover", function(d){
+          .on("mouseover", function(d){ // highlights region
               highlight(d.properties);
           })
-          .on("mouseout", function(d){
+          .on("mouseout", function(d){ // dehighlights region
               dehighlight(d.properties);
           })
           .on("mousemove", moveLabel);
@@ -198,7 +203,7 @@
       // add style descriptor to each path
       var desc = districts.append("desc")
           .text('{"stroke": "#000", "stroke-width": "0.5px"}');
-  };
+    };
 
     //function to test for data value and return color
     function choropleth(props, colorScale){
@@ -215,7 +220,7 @@
     };
 
     //function to create coordinated bar chart
-    function setChart(csvData, colorScale){
+    function setChart(csvData, colorScale, data){
         //create a second svg element to hold the bar chart
         var chart = d3.select("body")
             .append("svg")
@@ -275,6 +280,9 @@
             .attr("height", chartInnerHeight)
             .attr("transform", translate);
 
+        //updates y-scale
+        //updateYAxis(data, expressed)
+
         //set bar positions, heights, and colors
         updateChart(bars, csvData.length, colorScale, yScale);
     };
@@ -304,11 +312,11 @@
     };
 
     //dropdown change listener handler
-    function changeAttribute(attribute, csvData, data){
+    function changeAttribute(attribute, csvData){
         //change the expressed attribute
         expressed = attribute;
         //recreate the color scale
-        var colorScale = makeColorScale(csvData);
+        var colorScale = makeColorScale(csvData); // Makes color scale
 
         //recolor enumeration units
         var districts = d3.selectAll(".districts")
@@ -329,15 +337,15 @@
             })
             .duration(500);
 
-        console.log(csvData)
-
-
+        // Updates chart
         updateChart(bars, csvData.length, colorScale);
-//        updateYAxis(data)
+
+        // Updates y-axis
+        // updateYAxis(data)
     };
-    //onsole.log(expressed)
+
     //function to position, size, and color bars in chart
-    function updateChart(bars, n, colorScale){
+    function updateChart(bars, n, colorScale, data){
         //position bars
         bars.attr("x", function(d, i){
                 return i * (chartInnerWidth / n) + leftPadding;
@@ -354,10 +362,12 @@
                 return choropleth(d, colorScale);
             });
 
-      //create a text element for the chart title
-      var chartTitle = d3.select(".chartTitle")
-          .text(expressed + " Population in Each Region in 2013");
+        //create a text element for the chart title
+        var chartTitle = d3.select(".chartTitle")
+            .text(expressed + " Population in Each Region in 2013");
 
+        //set y-scale
+        //updateYAxis(data, expressed)
 
     };
     //function to highlight enumeration units and bars
@@ -405,6 +415,7 @@
             .attr("id", props.REGC2015_V + "_label")
             .html(labelAttribute);
 
+        // Adds region name to label
         var regionName = infolabel.append("div")
             .attr("class", "labelname")
             .html(props.districts);
@@ -434,8 +445,10 @@
           .style("top", y + "px");
   };
 
-  // //update y-axis
-  // function updateYAxis(data){
+  //update y-axis
+  // function updateYAxis(data, expressed){
+  //
+  //   console.log(data)
   //   //build array of all values of the expressed attribute
   //   var domainArray = [];
   //   for (var i=0; i<data.length; i++){
@@ -446,5 +459,6 @@
   //   var yScale = d3.scaleLinear()
   //       .range([463, 0])
   //       .domain([0, d3.max(domainArray) + 50]);
-  // }
+  //   return yScale;
+  //}
 })(); //last line of main.js
